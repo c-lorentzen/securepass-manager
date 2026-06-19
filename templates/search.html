@@ -1,0 +1,36 @@
+<!-- Author: Elissa Schlosser
+Course ID and section #: CIS2619.0M1
+Project: SecurePass Manager
+Program description: Displays search results for credentals that belong 
+to the authenticated user -->
+
+<h1>Search Results</h1>
+
+<!-- Show what the user searched -->
+<p>Results for: {{ search_term }}</p>
+
+<!-- Search form -->
+<form action="/search" method"GET">
+  <input type="text" name="query" placeholder="Search" value={{ search_term }}">
+  <button type="submit">Submit</button>
+</form>
+
+<!-- Display matching credentials -->
+{% if results %}
+  <ul>
+    {% for credential in results %}
+      <li>
+        <strong>{{ credential.website }}</strong><br>
+        Username: {{ credentials.username }}<br>
+        Password: **********<br>
+        <a href="/credentials/{{ credential.id }}">View</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>
+    Not found.
+  </p>
+{% endif %}
+
+<a href="/dashboard">Back to Dashboard</a>
