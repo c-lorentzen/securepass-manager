@@ -1,3 +1,8 @@
+# Author: Elissa Schlosser
+# Course ID and section #: CIS2619.0M1
+# Project: SecurePass Manager
+# Program description: Creates and displays the user dashboard
+# where authenticated users can access and manage their saved credentials.
 
 # Imports the render_template function
 from flask import render_template
