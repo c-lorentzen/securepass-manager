@@ -10,8 +10,8 @@ to the authenticated user -->
 <p>Results for: {{ search_term }}</p>
 
 <!-- Search form -->
-<form action="/search" method"GET">
-  <input type="text" name="query" placeholder="Search" value={{ search_term }}">
+<form action="/search" method="GET">
+  <input type="text" name="query" placeholder="Search" value="{{ search_term }}">
   <button type="submit">Submit</button>
 </form>
 
@@ -21,7 +21,7 @@ to the authenticated user -->
     {% for credential in results %}
       <li>
         <strong>{{ credential.website }}</strong><br>
-        Username: {{ credentials.username }}<br>
+        Username: {{ credential.username }}<br>
         Password: **********<br>
         <a href="/credentials/{{ credential.id }}">View</a>
       </li>
