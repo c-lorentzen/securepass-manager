@@ -9,7 +9,14 @@ import re
 
 
 # Validates the information entered in the registration form
-def validate_registration(username, email, password, confirm_password):
+def validate_registration(
+    username,
+    email,
+    password,
+    confirm_password,
+    username_exists=False,
+    email_exists=False
+):
 
     # Creates an empty list to store all the error messages
     error_messages = []
@@ -66,6 +73,14 @@ def validate_registration(username, email, password, confirm_password):
     # Checks if the confirm password is empty
     if confirm_password == "":
         error_messages.append("Please confirm your password.")
+
+    # Checks if the username is already registered
+    if username != "" and username_exists == True:
+        error_messages.append("Username is already registered.")
+
+    # Checks if the email is already registered
+    if email != "" and email_exists == True:
+        error_messages.append("Email is already registered.")
 
     # Creates the pattern used to check the email format
     email_pattern = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"

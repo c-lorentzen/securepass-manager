@@ -277,3 +277,83 @@ def test_empty_registration_fields():
 
     # Checks that all required field messages were returned
     assert actual_result["messages"] == expected_messages
+
+
+# Tests a username that is already registered
+def test_duplicate_username():
+
+    # Stores valid registration information
+    username = "studentUser"
+    email = "student@email.com"
+    password = "Password123"
+    confirm_password = "Password123"
+
+    # Stores True because the username already exists
+    username_exists = True
+
+    # Stores False because the email does not already exist
+    email_exists = False
+
+    # Calls the function and stores the actual result
+    actual_result = validate_registration(
+        username,
+        email,
+        password,
+        confirm_password,
+        username_exists,
+        email_exists
+    )
+
+    # Stores the expected Boolean result
+    expected_is_valid = False
+
+    # Creates the expected duplicate username message
+    expected_messages = [
+        "Username is already registered."
+    ]
+
+    # Checks that the registration was marked as invalid
+    assert actual_result["is_valid"] == expected_is_valid
+
+    # Checks that the duplicate username message was returned
+    assert actual_result["messages"] == expected_messages
+
+
+# Tests an email that is already registered
+def test_duplicate_email():
+
+    # Stores valid registration information
+    username = "studentUser"
+    email = "student@email.com"
+    password = "Password123"
+    confirm_password = "Password123"
+
+    # Stores False because the username does not already exist
+    username_exists = False
+
+    # Stores True because the email already exists
+    email_exists = True
+
+    # Calls the function and stores the actual result
+    actual_result = validate_registration(
+        username,
+        email,
+        password,
+        confirm_password,
+        username_exists,
+        email_exists
+    )
+
+    # Stores the expected Boolean result
+    expected_is_valid = False
+
+    # Creates the expected duplicate email message
+    expected_messages = [
+        "Email is already registered."
+    ]
+
+    # Checks that the registration was marked as invalid
+    assert actual_result["is_valid"] == expected_is_valid
+
+    # Checks that the duplicate email message was returned
+    assert actual_result["messages"] == expected_messages
