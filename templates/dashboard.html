@@ -16,10 +16,10 @@ user the view their saved credentials -->
    <ul>
      {% for credential in credentials %}
        <li>
-         <strong>{{ credentials.website }}</strong><br>
+         <strong>{{ credential.website }}</strong><br>
          Username:  {{ credential.username }}<br>
          Password: **********<br>
-         <a href="/credentials/{{ credentials.id }}">View</a>
+         <a href="/credentials/{{ credential.id }}">View</a>
        </li>
      {% endfor %}
    </ul>
