@@ -8,53 +8,25 @@
 from flask import render_template, request
 
 # Imports Flask-login tools for protecting routes and getting the logged in user
-#from flask_login import login_required, current_user
+from flask_login import login_required, current_user
 
 # Imports the Flask application from app.py
 from app import app
 
 # Imports database functions for retrieving and searching credentials
-#from securepass.database import (
-    #get_credentials_by_user,
-    #search_credentials,
-    #get_credential_by_id
-#)
+from securepass.database import (
+    get_credentials_by_user,
+    search_credentials,
+    get_credential_by_id
+)
 
-sample_credentials = [
-    {"id": 1, "user_id": 1, "website": "Gmail", "username": "elissa@gmail.com", "password": "pass123"},
-    {"id": 2, "user_id": 1, "website": "Canvas", "username": "elissa_student", "password": "school456"},
-    {"id": 3, "user_id": 2, "website": "Bank", "username": "other_user", "password": "private789"}
-]
-
-def get_credentials_by_user(user_id):
-    return [c for c in sample_credentials if c["user_id"] == user_id]
-
-
-def search_credentials(user_id, search_term):
-    return [
-        c for c in sample_credentials
-        if c["user_id"] == user_id
-        and search_term.lower() in c["website"].lower()
-    ]
-
-
-def get_credential_by_id(credential_id, user_id):
-    for c in sample_credentials:
-        if c["id"] == credential_id and c["user_id"] == user_id:
-            return c
-    return None
-
-TEMP_USER_ID = 1
 # Creates the dashboard route
 @app.route("/dashboard")
-#@login_required
+@login_required
 def dashboard():
 
     # Get credentials that belong to the logged in user
-    #credentials = get_credentials_by_user(current_user.id)
-
-    # temp added for testing
-    credentials = get_credentials_by_user(TEMP_USER_ID)
+    credentials = get_credentials_by_user(current_user.id)
 
     # Displays the dashboard page
     return render_template("dashboard.html", credentials=credentials)
