@@ -1,45 +1,120 @@
 # Author: Elissa Schlosser
+# Integrated by: Cristhian Lorentzen
 # Course ID and section #: CIS2619.0M1
 # Project: SecurePass Manager
-# Program description: Tests the dashboard, search, and view credential
-# functionality of the SecurePass Manager application.
+# Program description: Tests the Dashboard, Search, and View Credential
+# routes used by the integrated SecurePass Manager application
 
 
-# Tests that the dashboard route exists and can be accessed
-def test_dashboard_route_exists(client):
+# Imports Path to inspect the credential template
+from pathlib import Path
 
-    # Sends a request to the dashboard page
-    response = client.get("/dashboard")
-
-    # Verifies that the page loads or redirects to login
-    assert response.status_code in [200, 302]
+# Imports the Flask application
+from app import app
 
 
-# Tests that the search route exists and accepts a search query
-def test_search_route_exists(client):
+# Gets all route paths registered by the Flask application
+def get_application_routes():
 
-    # Sends a search request
-    response = client.get("/search?query=gmail")
+    # Creates an empty list for the route paths
+    route_paths = []
 
-    # Verifies that the page loads or redirects to login
-    assert response.status_code in [200, 302]
+    # Goes through every Flask route
+    for route in app.url_map.iter_rules():
 
+        # Adds the current route path to the list
+        route_paths.append(route.rule)
 
-# Tests that the view credential route exists
-def test_view_credential_route_exists(client):
-
-    # Requests a credential with an example ID
-    response = client.get("/credentials/1")
-
-    # Verifies that the page loads or redirects to login
-    assert response.status_code in [200, 302]
+    # Returns all registered route paths
+    return route_paths
 
 
-# Tests that passwords are hidden by default
-def test_password_hidden_by_default(client):
+# Tests that the Dashboard route exists and requires Login
+def test_dashboard_route_exists():
 
-    # Requests a credential page
-    response = client.get("/credentials/1")
+    # Gets the registered application routes
+    route_paths = get_application_routes()
 
-    # Verifies that the hidden password mask is displayed
-    assert b"**********" in response.data
+    # Checks that the Dashboard route exists
+    assert "/dashboard" in route_paths
+
+    # Creates a Flask test client
+    test_client = app.test_client()
+
+    # Tries to open the protected Dashboard
+    response = test_client.get("/dashboard")
+
+    # Checks that the logged-out user was redirected
+    assert response.status_code == 302
+
+    # Checks that the redirect goes to Login
+    assert "/login" in response.location
+
+
+# Tests that the Search route exists and requires Login
+def test_search_route_exists():
+
+    # Gets the registered application routes
+    route_paths = get_application_routes()
+
+    # Checks that the Search route exists
+    assert "/search" in route_paths
+
+    # Creates a Flask test client
+    test_client = app.test_client()
+
+    # Tries to search while logged out
+    response = test_client.get("/search?query=gmail")
+
+    # Checks that the logged-out user was redirected
+    assert response.status_code == 302
+
+    # Checks that the redirect goes to Login
+    assert "/login" in response.location
+
+
+# Tests that the View Credential route exists and requires Login
+def test_view_credential_route_exists():
+
+    # Gets the registered application routes
+    route_paths = get_application_routes()
+
+    # Checks that the View Credential route exists
+    assert "/credentials/<int:credential_id>" in route_paths
+
+    # Creates a Flask test client
+    test_client = app.test_client()
+
+    # Tries to open a credential while logged out
+    response = test_client.get("/credentials/1")
+
+    # Checks that the logged-out user was redirected
+    assert response.status_code == 302
+
+    # Checks that the redirect goes to Login
+    assert "/login" in response.location
+
+
+# Tests that the credential password is hidden by default
+def test_password_hidden_by_default():
+
+    # Finds the main project folder
+    project_path = Path(__file__).resolve().parents[1]
+
+    # Finds the View Credential template
+    template_path = (
+        project_path
+        / "templates"
+        / "view_credential.html"
+    )
+
+    # Reads the template content
+    template_content = template_path.read_text(
+        encoding="utf-8"
+    )
+
+    # Checks that the password field is hidden by default
+    assert 'type="password"' in template_content
+
+    # Checks that the user can choose to show the password
+    assert "Show Password" in template_content
