@@ -46,7 +46,19 @@ def login():
 @login_required
 def dashboard():
     username = session.get("username")
-    return f"Welcome, {username}! This is the dashboard."
+    return f"""
+    <h1>Welcome, {username}!</h1>
+    <p>This is the dashboard.</p>
+    <a href='{url_for("logout")}' style='
+        display:inline-block;
+        padding:8px 14px;
+        background:#d9534f;
+        color:white;
+        text-decoration:none;
+        border-radius:4px;
+        font-weight:bold;
+    '>Logout</a>
+"""
 
 
 @app.route("/logout")
