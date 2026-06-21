@@ -11,6 +11,9 @@ import hashlib
 import os
 from cryptography.fernet import Fernet
 
+# Stores the name of the local encryption key file
+KEY_FILE_PATH = "securepass.key"
+
 
 def hash_password(password):
     if not isinstance(password, str):
@@ -45,13 +48,45 @@ def verify_password(password, stored_hash):
     return new_hash == original_hash
 
 
+# Gets or creates the encryption key used for saved credentials
 def get_encryption_key():
+
+    # Tries to get the encryption key from the environment
     key = os.environ.get("SECUREPASS_KEY")
 
-    if key is None:
-        raise ValueError("Encryption key not found. Set SECUREPASS_KEY first.")
+    # Returns the environment key when it exists
+    if key is not None and key != "":
+        return key.encode()
 
-    return key.encode()
+    # Checks if the local key file already exists
+    if os.path.exists(KEY_FILE_PATH):
+
+        # Opens the local key file
+        key_file = open(KEY_FILE_PATH, "rb")
+
+        # Reads the saved encryption key
+        saved_key = key_file.read()
+
+        # Closes the key file
+        key_file.close()
+
+        # Returns the saved encryption key
+        return saved_key
+
+    # Creates a new encryption key
+    new_key = Fernet.generate_key()
+
+    # Creates the local key file
+    key_file = open(KEY_FILE_PATH, "wb")
+
+    # Saves the new encryption key
+    key_file.write(new_key)
+
+    # Closes the key file
+    key_file.close()
+
+    # Returns the new encryption key
+    return new_key
 
 
 def encrypt_password(saved_password):
