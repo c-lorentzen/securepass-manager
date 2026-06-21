@@ -33,6 +33,8 @@ from securepass.database import get_credentials_by_user
 from securepass.database import search_credentials
 from securepass.database import get_credential_by_id
 from securepass.database import create_credential
+from securepass.database import update_credential
+from securepass.database import delete_credential
 
 # Imports the password security functions
 from security_utils import hash_password
@@ -426,6 +428,141 @@ def view_credential(credential_id):
         credential=credential
     )
 
+
+# Author: Cristhian Lorentzen
+# Displays and processes the Edit Credential page
+@app.route(
+    "/credentials/<int:credential_id>/edit",
+    methods=["GET", "POST"]
+)
+@login_required
+def edit_credential(credential_id):
+
+    # Gets the credential using the entry ID and current user ID
+    credential = get_credential_by_id(
+        credential_id,
+        session["user_id"],
+        app.config["DATABASE_PATH"]
+    )
+
+    # Returns to the Dashboard if the credential was not found
+    if credential is None:
+        return redirect(url_for("dashboard"))
+
+    # Creates an empty list for validation messages
+    messages = []
+
+    # Checks if the Edit Credential form was submitted
+    if request.method == "POST":
+
+        # Gets and cleans the website name
+        website = request.form.get("website", "").strip()
+
+        # Gets and cleans the optional website URL
+        website_url = request.form.get(
+            "website_url",
+            ""
+        ).strip()
+
+        # Gets and cleans the credential username
+        login_username = request.form.get(
+            "login_username",
+            ""
+        ).strip()
+
+        # Gets the optional replacement password
+        saved_password = request.form.get(
+            "saved_password",
+            ""
+        )
+
+        # Gets and cleans the optional notes
+        notes = request.form.get("notes", "").strip()
+
+        # Checks the required website field
+        if website == "":
+            messages.append(
+                "Please enter the website or account name."
+            )
+
+        # Checks the required username field
+        if login_username == "":
+            messages.append(
+                "Please enter the account username or email."
+            )
+
+        # Continues when the required information is present
+        if len(messages) == 0:
+
+            # Keeps the existing encrypted password by default
+            encrypted_password = credential[
+                "encrypted_password"
+            ]
+
+            # Encrypts a replacement password when one was entered
+            if saved_password != "":
+                encrypted_password = encrypt_password(
+                    saved_password
+                )
+
+            # Updates only a credential owned by the current user
+            credential_updated = update_credential(
+                credential_id,
+                session["user_id"],
+                website,
+                website_url,
+                login_username,
+                encrypted_password,
+                notes,
+                app.config["DATABASE_PATH"]
+            )
+
+            # Opens the updated credential when the update succeeded
+            if credential_updated == True:
+                return redirect(
+                    url_for(
+                        "view_credential",
+                        credential_id=credential_id
+                    )
+                )
+
+            # Displays a safe message if the update failed
+            messages.append(
+                "The credential could not be updated."
+            )
+
+        # Keeps the submitted information in the form
+        credential["website"] = website
+        credential["website_url"] = website_url
+        credential["username"] = login_username
+        credential["notes"] = notes
+
+    # Displays the Edit Credential form
+    return render_template(
+        "edit_credential.html",
+        credential=credential,
+        messages=messages
+    )
+
+
+# Author: Cristhian Lorentzen
+# Deletes one credential owned by the authenticated user
+@app.route(
+    "/credentials/<int:credential_id>/delete",
+    methods=["POST"]
+)
+@login_required
+def remove_credential(credential_id):
+
+    # Deletes using both the credential ID and current user ID
+    delete_credential(
+        credential_id,
+        session["user_id"],
+        app.config["DATABASE_PATH"]
+    )
+
+    # Returns the user to the Dashboard
+    return redirect(url_for("dashboard"))
 
 # Logs the user out
 @app.route("/logout")
