@@ -6,7 +6,7 @@
 # pages and manages the authenticated user session
 
 
-# Imports the operating system module to read the Flask secret key
+# Imports the operating system module to read configuration values
 import os
 
 # Imports the Flask tools used to display pages, read forms, and manage sessions
@@ -15,11 +15,21 @@ from flask import Flask, render_template, request, redirect, url_for, session
 # Imports wraps so the protected route keeps its original name
 from functools import wraps
 
-# Imports the registration validation function
+# Imports the Registration validation function
 from securepass.registration import validate_registration
 
 # Imports the Authentication service
 from securepass.authentication import AuthenticationService
+
+# Imports the user database functions
+from securepass.database import initialize_database
+from securepass.database import username_exists
+from securepass.database import email_exists
+from securepass.database import create_user
+from securepass.database import get_user_by_login
+
+# Imports the password hashing function
+from security_utils import hash_password
 
 
 # Creates the Flask application
@@ -31,8 +41,14 @@ app.secret_key = os.environ.get(
     "development-secret-key"
 )
 
-# Creates the Authentication service
-auth_service = AuthenticationService()
+# Stores the path used for the SQLite database
+app.config["DATABASE_PATH"] = os.environ.get(
+    "SECUREPASS_DATABASE_PATH",
+    "securepass.db"
+)
+
+# Creates the database tables when they do not already exist
+initialize_database(app.config["DATABASE_PATH"])
 
 
 # Checks if a user ID is stored in the session
@@ -68,25 +84,25 @@ def home():
     return redirect(url_for("login"))
 
 
-# Displays and processes the registration page
+# Displays and processes the Registration page
 @app.route("/register", methods=["GET", "POST"])
 def register():
 
-    # Creates an empty list to store registration messages
+    # Creates an empty list to store Registration messages
     messages = []
 
-    # Creates empty values for the registration form
+    # Creates empty values for the Registration form
     username = ""
     email = ""
 
-    # Checks if the registration form was submitted
+    # Checks if the Registration form was submitted
     if request.method == "POST":
 
-        # Gets the username entered in the form
-        username = request.form.get("username", "")
+        # Gets and cleans the username entered in the form
+        username = request.form.get("username", "").strip()
 
-        # Gets the email entered in the form
-        email = request.form.get("email", "")
+        # Gets and cleans the email entered in the form
+        email = request.form.get("email", "").strip()
 
         # Gets the password entered in the form
         password = request.form.get("password", "")
@@ -94,25 +110,70 @@ def register():
         # Gets the confirmation password entered in the form
         confirm_password = request.form.get("confirm_password", "")
 
+        # Stores the current database path
+        database_path = app.config["DATABASE_PATH"]
+
+        # Checks if the username already exists
+        username_already_exists = False
+
+        if username != "":
+            username_already_exists = username_exists(
+                username,
+                database_path
+            )
+
+        # Checks if the email already exists
+        email_already_exists = False
+
+        if email != "":
+            email_already_exists = email_exists(
+                email,
+                database_path
+            )
+
         # Calls the validation function and stores the result
         validation_result = validate_registration(
             username,
             email,
             password,
-            confirm_password
+            confirm_password,
+            username_already_exists,
+            email_already_exists
         )
 
         # Stores the validation messages
         messages = validation_result["messages"]
 
-        # Shows a temporary message when the information is valid
+        # Continues when the Registration information is valid
         if validation_result["is_valid"] == True:
+
+            # Creates a protected hash of the account password
+            password_hash = hash_password(password)
+
+            # Stores the new user in the database
+            user_created = create_user(
+                username,
+                email,
+                password_hash,
+                database_path
+            )
+
+            # Sends the new user to Login when the account was created
+            if user_created == True:
+                return redirect(
+                    url_for(
+                        "login",
+                        registered="true"
+                    )
+                )
+
+            # Shows a safe message if the user could not be saved
             messages = [
-                "Registration information is valid. "
-                "The account has not been saved yet."
+                "The account could not be created. "
+                "Please try again."
             ]
 
-    # Displays the registration page with its current information
+    # Displays the Registration page with its current information
     return render_template(
         "register.html",
         messages=messages,
@@ -125,15 +186,30 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
 
+    # Stores an empty success message
+    success_message = ""
+
+    # Checks if the user was redirected after Registration
+    if request.args.get("registered") == "true":
+        success_message = "Account created successfully. Please log in."
+
     # Displays the Login page before the form is submitted
     if request.method == "GET":
-        return render_template("login.html")
+        return render_template(
+            "login.html",
+            success_message=success_message
+        )
 
     # Gets the username or email entered in the form
     username_or_email = request.form.get("username", "").strip()
 
     # Gets the password entered in the form
     password = request.form.get("password", "")
+
+    # Creates the Authentication service using the current database
+    auth_service = AuthenticationService(
+        app.config["DATABASE_PATH"]
+    )
 
     # Checks the Login information
     is_valid = auth_service.authenticate_user(

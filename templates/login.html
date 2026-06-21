@@ -9,6 +9,10 @@
 <body>
     <h1>SecurePass Manager - Login</h1>
 
+    {% if success_message %}
+    <p style="color: green;">{{ success_message }}</p>
+    {% endif %}
+
     {% if error %}
     <p style="color: red;">{{ error }}</p>
     {% endif %}
