@@ -1,0 +1,30 @@
+<!-- Author: Elissa Schlosser
+Course ID and section #: CIS2619.0M1
+Project: SecurePass Manager
+Program description: Display the SecurePass dashboard, allowing authenticated
+user the view their saved credentials -->
+
+<h1>SecurePass Dashboard</h1>
+
+<form action="/search" method="GET">
+  <input type="text" name="query" placeholder="Search">
+  <button type="submit">Search</button>
+</form>
+
+<!-- Display user credential -->
+{% if credentials %}
+   <ul>
+     {% for credential in credentials %}
+       <li>
+         <strong>{{ credential.website }}</strong><br>
+         Username:  {{ credential.username }}<br>
+         Password: **********<br>
+         <a href="/credentials/{{ credential.id }}">View</a>
+       </li>
+     {% endfor %}
+   </ul>
+{% else %}
+
+<!-- Display message if no credential found -->
+<p>Not found.</p>
+{% endif %}
