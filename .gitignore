@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local SecurePass database
+securepass.db
+securepass.db-journal
