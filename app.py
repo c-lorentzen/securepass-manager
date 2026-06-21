@@ -28,8 +28,14 @@ from securepass.database import email_exists
 from securepass.database import create_user
 from securepass.database import get_user_by_login
 
-# Imports the password hashing function
+# Imports the credential database functions
+from securepass.database import get_credentials_by_user
+from securepass.database import search_credentials
+from securepass.database import get_credential_by_id
+
+# Imports the password security functions
 from security_utils import hash_password
+from security_utils import decrypt_password
 
 
 # Creates the Flask application
@@ -224,27 +230,105 @@ def login():
             error="Invalid username/email or password."
         )
 
-    # Stores temporary user information in the session
-    session["user_id"] = 1
-    session["username"] = username_or_email
+    # Gets the authenticated user from the database
+    user = get_user_by_login(
+        username_or_email,
+        app.config["DATABASE_PATH"]
+    )
+
+    # Displays a safe message if the user could not be retrieved
+    if user is None:
+        return render_template(
+            "login.html",
+            error="The account could not be accessed. Please try again."
+        )
+
+    # Stores the real user ID in the Flask session
+    session["user_id"] = user[0]
+
+    # Stores the registered username in the Flask session
+    session["username"] = user[1]
 
     # Sends the logged-in user to the Dashboard
     return redirect(url_for("dashboard"))
 
 
-# Displays a temporary protected Dashboard
+# Author: Elissa Schlosser
+# Integrated by: Cristhian Lorentzen
+# Displays the protected Dashboard
 @app.route("/dashboard")
 @login_required
 def dashboard():
 
-    # Gets the username stored in the session
-    username = session.get("username", "")
+    # Gets the authenticated user ID from the session
+    user_id = session["user_id"]
 
-    # Displays the temporary Dashboard
-    return (
-        "<h1>Welcome, " + username + "!</h1>"
-        "<p>This is the dashboard.</p>"
-        "<a href='/logout'>Logout</a>"
+    # Gets only the credentials that belong to the user
+    credentials = get_credentials_by_user(
+        user_id,
+        app.config["DATABASE_PATH"]
+    )
+
+    # Displays the Dashboard
+    return render_template(
+        "dashboard.html",
+        credentials=credentials,
+        username=session.get("username", "")
+    )
+
+
+# Author: Elissa Schlosser
+# Integrated by: Cristhian Lorentzen
+# Searches the authenticated user's credentials
+@app.route("/search")
+@login_required
+def search():
+
+    # Gets and cleans the search term
+    search_term = request.args.get("query", "").strip()
+
+    # Searches only credentials owned by the authenticated user
+    results = search_credentials(
+        session["user_id"],
+        search_term,
+        app.config["DATABASE_PATH"]
+    )
+
+    # Displays the search results
+    return render_template(
+        "search.html",
+        results=results,
+        search_term=search_term
+    )
+
+
+# Author: Elissa Schlosser
+# Integrated by: Cristhian Lorentzen
+# Displays one credential owned by the authenticated user
+@app.route("/credentials/<int:credential_id>")
+@login_required
+def view_credential(credential_id):
+
+    # Gets the credential using both the credential ID and user ID
+    credential = get_credential_by_id(
+        credential_id,
+        session["user_id"],
+        app.config["DATABASE_PATH"]
+    )
+
+    # Returns to the Dashboard if the credential was not found
+    if credential is None:
+        return redirect(url_for("dashboard"))
+
+    # Decrypts the saved password only for the authorized user
+    credential["password"] = decrypt_password(
+        credential["encrypted_password"]
+    )
+
+    # Displays the credential details
+    return render_template(
+        "view_credential.html",
+        credential=credential
     )
 
 

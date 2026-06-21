@@ -1,30 +1,69 @@
 <!-- Author: Elissa Schlosser
+Integrated by: Cristhian Lorentzen
 Course ID and section #: CIS2619.0M1
 Project: SecurePass Manager
-Program description: Display the SecurePass dashboard, allowing authenticated
-user the view their saved credentials -->
+Program description: Displays the authenticated user's saved credentials -->
 
-<h1>SecurePass Dashboard</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SecurePass Dashboard</title>
+</head>
+<body>
 
-<form action="/search" method="GET">
-  <input type="text" name="query" placeholder="Search">
-  <button type="submit">Search</button>
-</form>
+    <h1>SecurePass Dashboard</h1>
 
-<!-- Display user credential -->
-{% if credentials %}
-   <ul>
-     {% for credential in credentials %}
-       <li>
-         <strong>{{ credential.website }}</strong><br>
-         Username:  {{ credential.username }}<br>
-         Password: **********<br>
-         <a href="/credentials/{{ credential.id }}">View</a>
-       </li>
-     {% endfor %}
-   </ul>
-{% else %}
+    <p>Welcome, {{ username }}!</p>
 
-<!-- Display message if no credential found -->
-<p>Not found.</p>
-{% endif %}
+    <form action="{{ url_for('search') }}" method="GET">
+        <label for="query">Search credentials:</label>
+        <input
+            type="text"
+            id="query"
+            name="query"
+            placeholder="Website or username"
+        >
+        <button type="submit">Search</button>
+    </form>
+
+    <hr>
+
+    <h2>Saved Credentials</h2>
+
+    {% if credentials %}
+        <ul>
+            {% for credential in credentials %}
+                <li>
+                    <strong>{{ credential.website }}</strong><br>
+
+                    Website URL:
+                    {{ credential.website_url or "Not provided" }}<br>
+
+                    Username:
+                    {{ credential.username }}<br>
+
+                    Password: **********<br>
+
+                    <a
+                        href="{{ url_for(
+                            'view_credential',
+                            credential_id=credential.id
+                        ) }}"
+                    >
+                        View
+                    </a>
+                </li>
+                <br>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No credentials have been saved yet.</p>
+    {% endif %}
+
+    <hr>
+
+    <a href="{{ url_for('logout') }}">Logout</a>
+
+</body>
+</html>
