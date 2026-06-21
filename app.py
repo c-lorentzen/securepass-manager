@@ -32,10 +32,12 @@ from securepass.database import get_user_by_login
 from securepass.database import get_credentials_by_user
 from securepass.database import search_credentials
 from securepass.database import get_credential_by_id
+from securepass.database import create_credential
 
 # Imports the password security functions
 from security_utils import hash_password
 from security_utils import decrypt_password
+from security_utils import encrypt_password
 
 
 # Creates the Flask application
@@ -251,6 +253,99 @@ def login():
 
     # Sends the logged-in user to the Dashboard
     return redirect(url_for("dashboard"))
+
+
+# Emergency integration by Cristhian Lorentzen
+# Displays and processes the Add Credential page
+@app.route("/credentials/add", methods=["GET", "POST"])
+@login_required
+def add_credential():
+
+    # Creates an empty list for validation messages
+    messages = []
+
+    # Creates empty values for the form
+    website = ""
+    website_url = ""
+    login_username = ""
+    notes = ""
+
+    # Checks if the Add Credential form was submitted
+    if request.method == "POST":
+
+        # Gets and cleans the website name
+        website = request.form.get("website", "").strip()
+
+        # Gets and cleans the optional website URL
+        website_url = request.form.get(
+            "website_url",
+            ""
+        ).strip()
+
+        # Gets and cleans the credential username
+        login_username = request.form.get(
+            "login_username",
+            ""
+        ).strip()
+
+        # Gets the saved password
+        saved_password = request.form.get(
+            "saved_password",
+            ""
+        )
+
+        # Gets and cleans the optional notes
+        notes = request.form.get("notes", "").strip()
+
+        # Checks the required website field
+        if website == "":
+            messages.append(
+                "Please enter the website or account name."
+            )
+
+        # Checks the required username field
+        if login_username == "":
+            messages.append(
+                "Please enter the account username or email."
+            )
+
+        # Checks the required password field
+        if saved_password == "":
+            messages.append(
+                "Please enter the password you want to save."
+            )
+
+        # Continues when all required information is present
+        if len(messages) == 0:
+
+            # Encrypts the saved password before database storage
+            encrypted_password = encrypt_password(
+                saved_password
+            )
+
+            # Stores the encrypted credential for the current user
+            create_credential(
+                session["user_id"],
+                website,
+                website_url,
+                login_username,
+                encrypted_password,
+                notes,
+                app.config["DATABASE_PATH"]
+            )
+
+            # Sends the user back to the Dashboard
+            return redirect(url_for("dashboard"))
+
+    # Displays the Add Credential form
+    return render_template(
+        "add_credential.html",
+        messages=messages,
+        website=website,
+        website_url=website_url,
+        login_username=login_username,
+        notes=notes
+    )
 
 
 # Author: Elissa Schlosser
